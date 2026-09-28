@@ -1,13 +1,50 @@
+from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from core.models import Inscricao
+from core.paginacao import resposta_paginada
+from core.serializers.inscricao import InscricaoSerializer
+
 
 @api_view(["GET", "POST"])
 def inscricoes(request):
-    return Response({"detail": "Em desenvolvimento"}, status=status.HTTP_501_NOT_IMPLEMENTED)
+    if request.method == "GET":
+        inscricoes = Inscricao.objects.all()
+        participante_id = request.query_params.get("participante_id")
+        if participante_id:
+            inscricoes = inscricoes.filter(participante_id=participante_id)
+        evento_id = request.query_params.get("evento_id")
+        if evento_id:
+            inscricoes = inscricoes.filter(evento_id=evento_id)
+        status_da_inscricao = request.query_params.get("status")
+        if status_da_inscricao:
+            inscricoes = inscricoes.filter(status=status_da_inscricao)
+        organizador_id = request.query_params.get("organizador_id")
+        if organizador_id:
+            inscricoes = inscricoes.filter(evento__organizador_id=organizador_id)
+        return resposta_paginada(inscricoes, request, InscricaoSerializer)
+
+    serializer = InscricaoSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["GET", "PUT", "PATCH", "DELETE"])
 def inscricao(request, pk):
-    return Response({"detail": "Em desenvolvimento"}, status=status.HTTP_501_NOT_IMPLEMENTED)
+    inscricao = get_object_or_404(Inscricao, pk=pk)
+
+    if request.method == "GET":
+        return Response(InscricaoSerializer(inscricao).data)
+
+    if request.method == "DELETE":
+        inscricao.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    parcial = request.method == "PATCH"
+    serializer = InscricaoSerializer(inscricao, data=request.data, partial=parcial)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)
