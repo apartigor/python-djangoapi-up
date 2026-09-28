@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from core.models import Inscricao
+from core.filtros import filtrar_por_id
 from core.paginacao import resposta_paginada
 from core.serializers.inscricao import InscricaoSerializer
 
@@ -12,18 +13,12 @@ from core.serializers.inscricao import InscricaoSerializer
 def inscricoes(request):
     if request.method == "GET":
         inscricoes = Inscricao.objects.all()
-        participante_id = request.query_params.get("participante_id")
-        if participante_id:
-            inscricoes = inscricoes.filter(participante_id=participante_id)
-        evento_id = request.query_params.get("evento_id")
-        if evento_id:
-            inscricoes = inscricoes.filter(evento_id=evento_id)
+        inscricoes = filtrar_por_id(inscricoes, request, "participante_id", "participante_id")
+        inscricoes = filtrar_por_id(inscricoes, request, "evento_id", "evento_id")
         status_da_inscricao = request.query_params.get("status")
         if status_da_inscricao:
             inscricoes = inscricoes.filter(status=status_da_inscricao)
-        organizador_id = request.query_params.get("organizador_id")
-        if organizador_id:
-            inscricoes = inscricoes.filter(evento__organizador_id=organizador_id)
+        inscricoes = filtrar_por_id(inscricoes, request, "organizador_id", "evento__organizador_id")
         return resposta_paginada(inscricoes, request, InscricaoSerializer)
 
     serializer = InscricaoSerializer(data=request.data)

@@ -4,6 +4,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from core.models import Evento
+from core.filtros import filtrar_por_id
 from core.paginacao import resposta_paginada
 from core.serializers.evento import EventoSerializer
 
@@ -12,12 +13,8 @@ from core.serializers.evento import EventoSerializer
 def eventos(request):
     if request.method == "GET":
         eventos = Evento.objects.all()
-        categoria_id = request.query_params.get("categoria_id")
-        if categoria_id:
-            eventos = eventos.filter(categoria_id=categoria_id)
-        organizador_id = request.query_params.get("organizador_id")
-        if organizador_id:
-            eventos = eventos.filter(organizador_id=organizador_id)
+        eventos = filtrar_por_id(eventos, request, "categoria_id", "categoria_id")
+        eventos = filtrar_por_id(eventos, request, "organizador_id", "organizador_id")
         ativo = request.query_params.get("ativo")
         if ativo:
             eventos = eventos.filter(ativo=ativo == "true")

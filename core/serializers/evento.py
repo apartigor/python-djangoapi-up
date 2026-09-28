@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import serializers
 
 from core.models import Categoria, Evento, Usuario
@@ -28,3 +29,29 @@ class EventoSerializer(serializers.ModelSerializer):
         if usuario.tipo != "organizador":
             raise serializers.ValidationError("Usuario nao e um organizador")
         return usuario
+
+    def validate_vagas(self, vagas):
+        if vagas < 1:
+            raise serializers.ValidationError("Deve haver pelo menos 1 vaga")
+        return vagas
+
+    def validate_preco(self, preco):
+        if preco < 0:
+            raise serializers.ValidationError("Preco nao pode ser negativo")
+        return preco
+
+    def validate_data(self, data):
+        mudou = self.instance is None or data != self.instance.data
+        if mudou and data <= timezone.now():
+            raise serializers.ValidationError("Data deve ser no futuro")
+        return data
+
+    def validate(self, dados):
+        vagas = dados.get("vagas")
+        if self.instance is not None and vagas is not None:
+            confirmadas = self.instance.inscricoes.filter(status="confirmada").count()
+            if vagas < confirmadas:
+                raise serializers.ValidationError(
+                    {"vagas": f"Evento ja tem {confirmadas} inscricoes confirmadas"}
+                )
+        return dados
